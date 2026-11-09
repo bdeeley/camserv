@@ -1,0 +1,9 @@
+.env
+storage/
+build.log
+config/*.db
+config/*.db-*
+config/.jwt_secret
+config/.*.json
+config/.*.lock
+config/model_cache/

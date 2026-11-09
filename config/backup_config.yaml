@@ -1,0 +1,69 @@
+mqtt:
+  enabled: false
+
+# Start on CPU; switch to an ONNX/TensorRT GPU detector later (see notes)
+detectors:
+  cpu1:
+    type: cpu
+    num_threads: 3
+
+ffmpeg:
+  hwaccel_args: preset-nvidia # NVDEC decode of 4K streams
+
+# go2rtc restreams each camera once so Frigate + live view share one connection
+go2rtc:
+  streams:
+    cam1:
+      - rtsp://{FRIGATE_CAM_USER}:{FRIGATE_CAM_PASS}@{FRIGATE_CAM1_IP}:554/h264Preview_01_main
+    cam1_sub:
+      - rtsp://{FRIGATE_CAM_USER}:{FRIGATE_CAM_PASS}@{FRIGATE_CAM1_IP}:554/h264Preview_01_sub
+    cam2:
+      - rtsp://{FRIGATE_CAM_USER}:{FRIGATE_CAM_PASS}@{FRIGATE_CAM2_IP}:554/h264Preview_01_main
+    cam2_sub:
+      - rtsp://{FRIGATE_CAM_USER}:{FRIGATE_CAM_PASS}@{FRIGATE_CAM2_IP}:554/h264Preview_01_sub
+
+cameras:
+  cam1:
+    ffmpeg:
+      inputs:
+        - path: rtsp://127.0.0.1:8554/cam1_sub
+          input_args: preset-rtsp-restream
+          roles: [detect]
+        - path: rtsp://127.0.0.1:8554/cam1
+          input_args: preset-rtsp-restream
+          roles: [record]
+    detect:
+      width: 640   # RLC-520A substream is 640x480
+      height: 480
+      fps: 5
+  cam2:
+    ffmpeg:
+      inputs:
+        - path: rtsp://127.0.0.1:8554/cam2_sub
+          input_args: preset-rtsp-restream
+          roles: [detect]
+        - path: rtsp://127.0.0.1:8554/cam2
+          input_args: preset-rtsp-restream
+          roles: [record]
+    detect:
+      width: 640   # RLC-520A substream is 640x480
+      height: 480
+      fps: 5
+
+objects:
+  track: [person, car, dog, cat]
+
+record:
+  enabled: true
+  retain:
+    days: 3
+    mode: motion
+  alerts:
+    retain: { days: 30 }
+  detections:
+    retain: { days: 30 }
+
+snapshots:
+  enabled: true
+  retain:
+    default: 30

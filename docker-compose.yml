@@ -1,0 +1,31 @@
+services:
+  frigate:
+    container_name: camserv
+    privileged: true # This may not be necessary for all setups
+    restart: unless-stopped
+    stop_grace_period: 30s # Allow enough time to shut down the various services
+    image: ghcr.io/blakeblackshear/frigate:stable-tensorrt # NVIDIA build (also works for ffmpeg NVDEC)
+    shm_size: "512mb" # 2 cameras; raise if you see "bus error" / shm warnings in logs
+    env_file: .env # camera credentials (FRIGATE_* vars)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    volumes:
+      - /etc/localtime:/etc/localtime:ro # Sync host time
+      - ./config:/config # Config file directory
+      - ./storage:/media/frigate # Recording storage directory
+      - type: tmpfs # 1GB in-memory filesystem for recording segment storage
+        target: /tmp/cache
+        tmpfs:
+          size: 1000000000
+    ports:
+      - "8971:8971" # Authenticated UI and API access (HTTPS)
+      - "8554:8554" # RTSP feeds from go2rtc
+      - "8555:8555" # WebRTC over TCP
+      - "8555:8555/udp" # WebRTC over UDP
+    environment:
+      TZ: "America/Chicago" # Timezone
